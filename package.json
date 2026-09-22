@@ -1,0 +1,12 @@
+{
+  "name": "sharepoint-excel-viewer-api",
+  "version": "1.0.0",
+  "main": "src/functions/*.js",
+  "scripts": {
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.5.0",
+    "axios": "^1.7.7"
+  }
+}

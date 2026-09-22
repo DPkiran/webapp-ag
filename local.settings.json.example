@@ -1,0 +1,21 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+
+    "TENANT_ID": "your-tenant-id-guid",
+    "CLIENT_ID": "your-app-client-id-guid",
+    "CLIENT_SECRET": "your-client-secret-value",
+
+    "SITE_HOSTNAME": "powercen.sharepoint.com",
+    "SITE_PATH": "/sites/YourSiteName",
+    "FILE_PATH": "/Shared Documents/EmployeeRequestForm.xlsx",
+    "TABLE_NAME": "Table1",
+
+    "POLL_INTERVAL_SECONDS": "20"
+  },
+  "Host": {
+    "CORS": "*"
+  }
+}

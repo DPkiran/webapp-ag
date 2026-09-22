@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Employee Request Form — Live Data</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card-bg: #ffffff;
+    --border: #dfe3e8;
+    --header-bg: #2f5aa8;
+    --header-text: #ffffff;
+    --text: #1f2733;
+    --muted: #6b7684;
+    --stripe: #f7f9fc;
+    --ok: #2e7d32;
+    --err: #c62828;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin: 0 0 4px 0;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 18px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .status {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .status.ok::before { content: "● "; color: var(--ok); }
+  .status.err::before { content: "● "; color: var(--err); }
+  button {
+    background: var(--header-bg);
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  button:hover { opacity: 0.9; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  thead th {
+    background: var(--header-bg);
+    color: var(--header-text);
+    text-align: left;
+    padding: 10px 14px;
+    position: sticky;
+    top: 0;
+  }
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--stripe); }
+  .table-wrap {
+    max-height: 65vh;
+    overflow: auto;
+  }
+  .empty, .loading, .error-box {
+    padding: 40px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .error-box { color: var(--err); }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Employee Request Form — Live Data</h1>
+    <div class="subtitle">Reflects the Excel table on SharePoint in near real time.</div>
+
+    <div class="card">
+      <div class="toolbar">
+        <span id="status" class="status">Loading…</span>
+        <button id="refreshBtn">Refresh now</button>
+      </div>
+      <div id="tableWrap" class="table-wrap">
+        <div class="loading">Loading data…</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const statusEl = document.getElementById('status');
+  const tableWrap = document.getElementById('tableWrap');
+  const refreshBtn = document.getElementById('refreshBtn');
+
+  let pollHandle = null;
+  let pollIntervalMs = 20000; // default, overridden by /api/config
+
+  function renderTable(headers, rows) {
+    if (!rows.length) {
+      tableWrap.innerHTML = '<div class="empty">No entries yet.</div>';
+      return;
+    }
+    const thead = '<thead><tr>' + headers.map(h => `<th>${escapeHtml(h)}</th>`).join('') + '</tr></thead>';
+    const tbody = '<tbody>' + rows.map(row =>
+      '<tr>' + row.map(cell => `<td>${escapeHtml(cell ?? '')}</td>`).join('') + '</tr>'
+    ).join('') + '</tbody>';
+    tableWrap.innerHTML = `<table>${thead}${tbody}</table>`;
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function setStatus(ok, message) {
+    statusEl.textContent = message;
+    statusEl.className = 'status ' + (ok ? 'ok' : 'err');
+  }
+
+  async function loadConfig() {
+    try {
+      const res = await fetch('/api/config');
+      const cfg = await res.json();
+      if (cfg.pollIntervalSeconds) {
+        pollIntervalMs = cfg.pollIntervalSeconds * 1000;
+      }
+    } catch (e) {
+      // fall back to default interval silently
+    }
+  }
+
+  async function loadData() {
+    try {
+      const res = await fetch('/api/data');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      renderTable(data.headers, data.rows);
+      const time = new Date(data.fetchedAt).toLocaleTimeString();
+      setStatus(true, `Live — last updated ${time}`);
+    } catch (err) {
+      setStatus(false, `Failed to load: ${err.message}`);
+      tableWrap.innerHTML = `<div class="error-box">Could not reach SharePoint data. Check server logs.</div>`;
+    }
+  }
+
+  function startPolling() {
+    if (pollHandle) clearInterval(pollHandle);
+    pollHandle = setInterval(loadData, pollIntervalMs);
+  }
+
+  refreshBtn.addEventListener('click', loadData);
+
+  (async function init() {
+    await loadConfig();
+    await loadData();
+    startPolling();
+  })();
+</script>
+</body>
+</html>
