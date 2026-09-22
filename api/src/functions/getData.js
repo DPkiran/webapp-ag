@@ -17,13 +17,10 @@ app.http('getData', {
       clearCaches(); // self-heal if the site/file moved or IDs went stale
       return {
         status: 502,
-        jsonBody: { error: 'Failed to read data from SharePoint', detail },
+        // TEMP: detail is included here for debugging — remove this field
+        // once the site is working, so internal error text isn't exposed publicly.
+        jsonBody: { error: 'Failed to read data from SharePoint', detail, requestedUrl: err.requestedUrl },
       };
     }
   },
 });
-
-
-
-
-    
