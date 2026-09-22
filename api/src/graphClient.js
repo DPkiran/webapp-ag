@@ -54,10 +54,16 @@ async function getAccessToken() {
 }
 
 async function graphGet(url, token) {
-  const { data } = await axios.get(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return data;
+  try {
+    const { data } = await axios.get(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
+  } catch (err) {
+    // TEMP: attach exactly what URL was requested, to debug "not found" errors
+    err.requestedUrl = url;
+    throw err;
+  }
 }
 
 async function resolveSiteId(token) {
