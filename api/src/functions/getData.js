@@ -12,12 +12,18 @@ app.http('getData', {
         jsonBody: { headers, rows, fetchedAt: new Date().toISOString() },
       };
     } catch (err) {
-      context.error('Graph fetch failed:', err.response ? JSON.stringify(err.response.data) : err.message);
+      const detail = err.response ? err.response.data : err.message;
+      context.error('Graph fetch failed:', JSON.stringify(detail));
       clearCaches(); // self-heal if the site/file moved or IDs went stale
       return {
         status: 502,
-        jsonBody: { error: 'Failed to read data from SharePoint' },
+        jsonBody: { error: 'Failed to read data from SharePoint', detail },
       };
     }
   },
 });
+
+
+
+
+    
